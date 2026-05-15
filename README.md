@@ -2,7 +2,7 @@
 
 **Assignment 4 — API Integration + Automation**
 
-A full-stack news digest application that ingests **multiple RSS feeds**, generates **two-line summaries** (OpenAI with a deterministic fallback), **clusters** related stories using TF–IDF and cosine similarity, exposes a **REST API** with **Swagger** documentation, and presents everything in a **React** frontend.
+A full-stack news digest application that ingests **multiple RSS feeds**, generates **two-line summaries** (Groq LLM with a deterministic fallback), **clusters** related stories using TF–IDF and cosine similarity, exposes a **REST API** with **Swagger** documentation, and presents everything in a **React** frontend.
 
 ---
 
@@ -51,7 +51,7 @@ A full-stack news digest application that ingests **multiple RSS feeds**, genera
 
 **One-line summary for submission forms**
 
-> Node/Express + MongoDB; scheduled RSS ingest from BBC and Guardian; OpenAI two-line summaries with fallback; TF–IDF clustering; React/Vite/Tailwind UI; Swagger at `/api-docs`; optional API key, rate limiting, and sentiment labels.
+> Node/Express + MongoDB; scheduled RSS ingest from BBC and Guardian; Groq two-line summaries with fallback; TF–IDF clustering; React/Vite/Tailwind UI; Swagger at `/api-docs`; optional API key, rate limiting, and sentiment labels.
 
 ---
 
@@ -74,7 +74,7 @@ Fill these in after you deploy. Until then, use local URLs from [Quick start](#q
 | Step | Description |
 |------|-------------|
 | **Fetch** | Pulls articles from BBC and Guardian RSS feeds ([`backend/src/config/feeds.js`](backend/src/config/feeds.js)). |
-| **Summarise** | For **new URLs only**, generates a strict two-line summary via OpenAI, or a sentence-based fallback if no API key ([`backend/src/summarizer/index.js`](backend/src/summarizer/index.js)). |
+| **Summarise** | For **new URLs only**, generates a strict two-line summary via [Groq](https://console.groq.com/), or a sentence-based fallback if no API key ([`backend/src/summarizer/index.js`](backend/src/summarizer/index.js)). |
 | **Cluster** | Groups similar stories with TF–IDF + cosine similarity ([`backend/src/clustering/index.js`](backend/src/clustering/index.js)). |
 | **Store** | Persists articles in MongoDB ([`backend/src/models/Article.js`](backend/src/models/Article.js)). |
 | **Schedule** | Re-ingests every **30 minutes** via `node-cron` ([`backend/src/cron/ingest.js`](backend/src/cron/ingest.js)). |
@@ -88,7 +88,7 @@ Summaries use the LLM only for **new article URLs**. Clustering is **algorithmic
 
 | Layer | Technologies |
 |-------|----------------|
-| **Backend** | Node.js 18+, Express, Mongoose, `node-cron`, `rss-parser`, OpenAI SDK, `natural` (TF–IDF), `sentiment`, Swagger |
+| **Backend** | Node.js 18+, Express, Mongoose, `node-cron`, `rss-parser`, Groq (OpenAI-compatible API), `natural` (TF–IDF), `sentiment`, Swagger |
 | **Database** | MongoDB 7 (Docker locally) or [MongoDB Atlas](https://www.mongodb.com/atlas) (production) |
 | **Frontend** | React 19, Vite 8, React Router, Tailwind CSS 4, Axios |
 | **Containers** | Docker Compose (local full stack); EC2 uses `docker-compose.prod.yml` + Caddy |
@@ -125,7 +125,7 @@ Multi-Source News Digest API/
 │   │   ├── routes/          # /digest, /topics, …
 │   │   ├── scripts/         # ingestOnce (manual / Docker entrypoint)
 │   │   ├── services/        # RSS + ingest orchestration
-│   │   ├── summarizer/      # OpenAI + fallback
+│   │   ├── summarizer/      # Groq + fallback
 │   │   └── swagger/         # OpenAPI path definitions
 │   ├── .env.example         # copy to .env — never commit .env
 │   └── Dockerfile
@@ -174,7 +174,7 @@ Runs **MongoDB**, **backend**, and **frontend** (nginx serving the Vite build) w
 From the **repository root**:
 
 ```bash
-cp .env.docker.example .env    # optional: set OPENAI_API_KEY, API_KEY, etc.
+cp .env.docker.example .env    # optional: set GROQ_API_KEY, API_KEY, etc.
 docker compose up --build
 ```
 
@@ -185,7 +185,7 @@ docker compose up --build
 | **Swagger** | http://localhost:8000/api-docs |
 | **MongoDB** | `localhost:27017` (for Compass / CLI) |
 
-On first start the backend container runs **`ingest-once`** automatically (`RUN_INGEST_ON_START=true` in [`backend/docker-entrypoint.sh`](backend/docker-entrypoint.sh)). The first boot can take several minutes if many articles are new and OpenAI is enabled.
+On first start the backend container runs **`ingest-once`** automatically (`RUN_INGEST_ON_START=true` in [`backend/docker-entrypoint.sh`](backend/docker-entrypoint.sh)). The first boot can take several minutes if many articles are new and Groq is enabled.
 
 ### Useful Docker commands
 
@@ -219,7 +219,7 @@ Use this when editing code with live reload instead of rebuilding Docker images.
 
 - **Node.js 18+**
 - **MongoDB** — `docker compose up mongo -d` from repo root, or MongoDB Atlas
-- **Optional:** [OpenAI API key](https://platform.openai.com/) for GPT summaries
+- **Optional:** [Groq API key](https://console.groq.com/keys) for LLM summaries
 
 ### 1. MongoDB
 
@@ -236,7 +236,7 @@ docker compose up mongo -d
 ```bash
 cd backend
 cp .env.example .env
-# Edit .env: MONGO_URI, optional OPENAI_API_KEY
+# Edit .env: MONGO_URI, optional GROQ_API_KEY
 npm install
 npm run ingest-once    # first-time data load
 npm run dev            # http://localhost:8000
@@ -311,7 +311,7 @@ flowchart TB
   RSS[BBC + Guardian RSS] --> Cron[node-cron every 30m]
   Cron --> Ingest[ingestService]
   Ingest --> New{New URL?}
-  New -->|yes| LLM[OpenAI 2-line summary or fallback]
+  New -->|yes| LLM[Groq 2-line summary or fallback]
   New -->|no| Skip[Reuse stored summary]
   LLM --> Store[(MongoDB)]
   Skip --> Store
@@ -476,7 +476,8 @@ Template: [`backend/.env.example`](backend/.env.example)
 |----------|----------|-------------|
 | `MONGO_URI` | **Yes** | MongoDB connection string including database name, e.g. `mongodb://127.0.0.1:27017/news-digest` or Atlas URI |
 | `PORT` | No | Default `8000` |
-| `OPENAI_API_KEY` | No | GPT two-line summaries; omit for sentence fallback |
+| `GROQ_API_KEY` | No | Groq two-line summaries; omit for sentence fallback |
+| `GROQ_MODEL` | No | Default `llama-3.3-70b-versatile` (see [Groq models](https://console.groq.com/docs/models)) |
 | `FRONTEND_URL` | No | CORS origin(s); comma-separated for multiple, e.g. `https://app.onrender.com,http://localhost:5173` |
 | `API_KEY` | No | If set, enforces `X-API-Key` on protected routes |
 | `SKIP_API_KEY_ON_GETS` | No | Production: `true` = public GET on digest/topics/article |
@@ -501,7 +502,8 @@ Template: [`.env.docker.example`](.env.docker.example) → copy to `.env` at rep
 |----------|-------------|
 | `VITE_API_URL` | Passed to frontend **build** (browser-visible API URL) |
 | `FRONTEND_URL` | Backend CORS |
-| `OPENAI_API_KEY` | Summaries in backend container |
+| `GROQ_API_KEY` | Summaries in backend container |
+| `GROQ_MODEL` | Optional Groq model id |
 | `API_KEY` | Optional API protection |
 | `RUN_INGEST_ON_START` | Default `true` |
 | `DISABLE_CRON` | Default `false` |
@@ -557,7 +559,8 @@ Create `deploy/.env` on the server (never commit):
 
 ```env
 MONGO_URI=mongodb+srv://USER:PASS@cluster.mongodb.net/news-digest
-OPENAI_API_KEY=sk-...
+GROQ_API_KEY=gsk_...
+GROQ_MODEL=llama-3.3-70b-versatile
 FRONTEND_URL=https://your-app-name.onrender.com
 API_KEY=
 SKIP_API_KEY_ON_GETS=true

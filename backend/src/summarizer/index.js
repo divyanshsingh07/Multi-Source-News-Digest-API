@@ -2,10 +2,17 @@ import OpenAI from "openai";
 import { env } from "../config/env.js";
 import { firstTwoSentences } from "../utils/text.js";
 
+const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
+
 let client = null;
 function getClient() {
-  if (!env.openAiKey) return null;
-  if (!client) client = new OpenAI({ apiKey: env.openAiKey });
+  if (!env.groqApiKey) return null;
+  if (!client) {
+    client = new OpenAI({
+      apiKey: env.groqApiKey,
+      baseURL: GROQ_BASE_URL,
+    });
+  }
   return client;
 }
 
@@ -17,7 +24,7 @@ export async function summarizeArticle(title, content) {
   }
   try {
     const res = await c.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: env.groqModel,
       messages: [
         {
           role: "system",
@@ -32,7 +39,7 @@ export async function summarizeArticle(title, content) {
     const text = res.choices[0]?.message?.content?.trim();
     if (text) return text;
   } catch (e) {
-    console.warn("OpenAI summarize failed:", e.message);
+    console.warn("Groq summarize failed:", e.message);
   }
   return firstTwoSentences(content || title);
 }

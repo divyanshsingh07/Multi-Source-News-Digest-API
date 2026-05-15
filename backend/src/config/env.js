@@ -13,8 +13,11 @@ export const env = {
   get mongoUri() {
     return (process.env.MONGO_URI || "").trim();
   },
-  get openAiKey() {
-    return process.env.OPENAI_API_KEY || "";
+  get groqApiKey() {
+    return process.env.GROQ_API_KEY || "";
+  },
+  get groqModel() {
+    return (process.env.GROQ_MODEL || "llama-3.3-70b-versatile").trim();
   },
   get frontendUrl() {
     return process.env.FRONTEND_URL || "http://localhost:5173";
