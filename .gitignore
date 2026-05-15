@@ -1,0 +1,18 @@
+node_modules/
+.env
+.env.*
+!.env.example
+!deploy/.env.production.example
+dist/
+.cursor/
+.DS_Store
+*.log
+coverage/
+deploy/.env
+
+# Local full-stack Docker (use docker-compose.prod.yml on EC2)
+docker-compose.yml
+.env.docker.example
+
+# Render blueprint (optional — copy settings in README)
+render.yaml

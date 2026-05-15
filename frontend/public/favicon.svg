@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-label="News Digest">
+  <rect width="32" height="32" rx="7" fill="#dc2626"/>
+  <path fill="#fff" d="M9 9h14v1.75H9V9Zm0 4.25h11v1.75H9v-1.75Zm0 4.25h13v1.75H9v-1.75Zm0 4.25h9v1.75H9v-1.75Z"/>
+  <circle cx="22" cy="22" r="3" fill="#fef2f2" fill-opacity="0.9"/>
+</svg>
