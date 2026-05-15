@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const raw = (import.meta.env.VITE_API_URL || "http://localhost:8000").trim();
+// Relative "/api" → same-origin proxy on Vercel (avoids HTTPS → HTTP mixed content)
+const baseURL = raw.startsWith("/") ? raw.replace(/\/$/, "") : raw.replace(/\/$/, "");
 
 export const api = axios.create({
   baseURL,

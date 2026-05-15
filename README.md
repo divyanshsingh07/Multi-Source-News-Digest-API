@@ -614,6 +614,32 @@ curl https://api.yourdomain.com/health
 
 Use [`render.yaml`](render.yaml) locally as reference (file is gitignored; create the service manually or copy the file into the repo if you want it on GitHub).
 
+### 5b. Vercel — frontend (HTTP EC2 API)
+
+Vercel serves the UI over **HTTPS**. Browsers block `https://your-app.vercel.app` → `http://EC2-IP:8000` (mixed content). This repo includes a **serverless proxy** at [`frontend/api/[...path].js`](frontend/api/[...path].js).
+
+**Vercel project settings**
+
+- Root directory: `frontend`
+- Framework: Vite
+
+**Environment variables (Production + Preview)**
+
+| Variable | Example | Purpose |
+|----------|---------|---------|
+| `VITE_API_URL` | `/api` | Browser calls same-origin `/api/digest` |
+| `BACKEND_URL` | `http://44.192.246.119:8000` | Proxy target (include **:8000**) |
+| `VITE_API_KEY` | (optional) | Forwarded as `X-API-Key` if EC2 `API_KEY` is set |
+
+Redeploy after changing env vars. Test proxy:
+
+```bash
+curl https://your-app.vercel.app/api/health
+curl https://your-app.vercel.app/api/digest
+```
+
+On EC2, set `FRONTEND_URL=https://your-app.vercel.app` if you call the API directly (without the proxy). With `/api` proxy, CORS is not required for the UI.
+
 ### 6. Post-deploy checklist
 
 1. Atlas IP whitelist includes EC2.

@@ -22,6 +22,7 @@ const corsOrigins = [
   /^https?:\/\/127\.0\.0\.1(:\d+)?$/,
   /^https?:\/\/frontend(:\d+)?$/,
   /\.onrender\.com$/,
+  /\.vercel\.app$/,
 ];
 
 app.use(
